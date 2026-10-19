@@ -43,7 +43,7 @@ $links = @(
 foreach ($path in $links) {
   $l = $shell.CreateShortcut($path)
   $l.TargetPath       = $edge
-  $l.Arguments        = "$common --app=`"$url`""
+  $l.Arguments        = "$common --app=`"$url`?app=1`""
   $l.IconLocation     = "$icon,0"
   $l.WorkingDirectory = $dest
   $l.Description      = 'WriteNow'
@@ -57,7 +57,7 @@ New-Item -Force "$progId\shell\open\command" | Out-Null
 New-Item -Force "$progId\DefaultIcon" | Out-Null
 Set-Item "$progId" 'PDF document (WriteNow)'
 Set-Item "$progId\DefaultIcon" "`"$icon`""
-Set-Item "$progId\shell\open\command" "`"$edge`" $common --app=`"$url`?pdf=%1`""
+Set-Item "$progId\shell\open\command" "`"$edge`" $common --app=`"$url`?app=1&pdf=%1`""
 New-ItemProperty -Force "$progId\shell\open" -Name FriendlyAppName -Value 'WriteNow' | Out-Null
 New-ItemProperty -Force "$progId\shell\open" -Name Icon -Value "`"$icon`"" | Out-Null
 New-Item -Force "$progId\Application" | Out-Null
