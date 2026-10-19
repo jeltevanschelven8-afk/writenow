@@ -2,7 +2,8 @@
 # It opens in its own Edge window without an address bar, with its own Edge
 # profile, and appears under "Open with" for PDF files.
 $ErrorActionPreference = 'Stop'
-$src  = $PSScriptRoot
+# WN_SRC is set by web-install.ps1, which runs this file's text without a script path.
+$src  = if ($env:WN_SRC) { $env:WN_SRC } else { $PSScriptRoot }
 $dest = Join-Path $env:LOCALAPPDATA 'Programs\WriteNow'
 
 # Remove an older install under the previous name, if there is one
@@ -67,7 +68,7 @@ New-Item -Force "$classes\.pdf\OpenWithProgids" | Out-Null
 New-ItemProperty -Force "$classes\.pdf\OpenWithProgids" -Name 'WriteNow.pdf' -Value '' | Out-Null
 
 # Tell Explorer that something changed
-Add-Type -Namespace WinApi -Name Shell -MemberDefinition '[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, int f, IntPtr a, IntPtr b);'
+if (-not ('WinApi.Shell' -as [type])) { Add-Type -Namespace WinApi -Name Shell -MemberDefinition '[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, int f, IntPtr a, IntPtr b);' }
 [WinApi.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
 
 Write-Host "WriteNow is installed in $dest"

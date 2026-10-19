@@ -1,18 +1,18 @@
 WRITENOW FOR WINDOWS
 by Jelte van Schelven
 
-INSTALL
-1. Double-click install.cmd.
-   If Windows shows "Windows protected your PC", click "More info" and then
-   "Run anyway". (This appears because the file was downloaded.)
-2. Press a key to close the window when it says "WriteNow is installed".
+RECOMMENDED INSTALL (works with Smart App Control)
+1. Click Start, type PowerShell and open Windows PowerShell.
+2. Paste this line and press Enter:
+   irm https://raw.githubusercontent.com/jeltevanschelven8-afk/writenow/main/windows/web-install.ps1 | iex
 3. Start WriteNow from the Start menu or the desktop icon.
 
-No administrator rights are needed and no Windows settings are changed.
-WriteNow opens in its own window and appears under "Open with" for PDF files.
+INSTALL FROM THIS FOLDER (PCs without Smart App Control)
+Double-click install.cmd. If "Windows protected your PC" appears, click
+"More info" and then "Run anyway". Do not run install.ps1 directly.
 
 REMOVE
-Double-click uninstall.cmd.
-This also removes documents saved inside WriteNow.
+Double-click uninstall.cmd, or paste this into Windows PowerShell:
+   irm https://raw.githubusercontent.com/jeltevanschelven8-afk/writenow/main/windows/uninstall.ps1 | iex
 
 Full guide: https://github.com/jeltevanschelven8-afk/writenow/blob/main/docs/INSTALL.md
