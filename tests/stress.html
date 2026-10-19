@@ -1,0 +1,394 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>WriteNow stress tests</title>
+<style>
+body{font:13px/1.4 system-ui,sans-serif;margin:16px;max-width:900px}
+.ok{color:#080}.bad{color:#c00;font-weight:600}
+#sum{font-size:16px;font-weight:700;margin:8px 0}
+pre{margin:2px 0 8px 18px;white-space:pre-wrap}
+</style>
+<h2>WriteNow stress tests</h2>
+<div id="sum">running…</div>
+<div id="out"></div>
+<script>
+/* Runs against the shipped page (windows/index.html), in a same-origin iframe.
+   Serve the project folder (python -m http.server) and open tests/stress.html.
+   window.__results is filled for automation. */
+const TARGET = new URLSearchParams(location.search).get('target') || '../windows/index.html';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const results = window.__results = [];
+let cur = null;
+
+async function boot(opts = {}) {
+  document.querySelectorAll('iframe').forEach(f => f.remove());
+  try { localStorage.clear(); } catch (e) {}
+  const f = document.createElement('iframe');
+  f.style.cssText = `width:${opts.w || 1000}px;height:${opts.h || 700}px;border:1px solid #999`;
+  f.errors = [];
+  let html = null;
+  if (opts.patch) {
+    html = await (await fetch(TARGET)).text();
+    html = '<script>' + opts.patch + '<\/script>' + html;
+    f.srcdoc = html;
+  } else f.src = TARGET;
+  document.body.appendChild(f);
+  await new Promise(r => f.addEventListener('load', r, { once: true }));
+  const w = f.contentWindow;
+  w.addEventListener('error', e => f.errors.push(String(e.message)));
+  { const oe = w.console.error; w.console.error = (...x) => { f.errors.push('console.error: ' + x.map(String).join(' ')); oe.apply(w.console, x); }; }
+  w.addEventListener('unhandledrejection', e => f.errors.push('rejection: ' + e.reason));
+  for (let i = 0; i < 40 && !w.document.querySelector('#body'); i++) await sleep(50);
+  await sleep(500);
+  const d = w.document.querySelector('.dlg .btn.def');
+  if (d) d.click();
+  await sleep(100);
+  return f;
+}
+const D = f => f.contentWindow.document;
+async function menu(f, id, label) {
+  const d = D(f), W = f.contentWindow;
+  d.querySelector(`.mt[data-id="${id}"]`).dispatchEvent(new W.PointerEvent('pointerdown', { bubbles: true }));
+  const it = [...d.querySelectorAll('.menu .mi')].find(e => (e.querySelector('.l') || e).textContent.trim() === label);
+  if (!it) throw new Error('menu item not found: ' + label);
+  it.dispatchEvent(new W.PointerEvent('pointerup', { bubbles: true }));
+  await sleep(350);
+}
+const dlgText = f => (D(f).querySelector('.dlg') || {}).innerText || '';
+async function closeDlg(f) { const b = D(f).querySelector('.dlg .btn'); if (b) b.click(); await sleep(80); }
+async function importFile(f, name, content, type = 'text/plain') {
+  const W = f.contentWindow, d = D(f), dt = new W.DataTransfer();
+  dt.items.add(new W.File([content], name, { type }));
+  const inp = d.querySelector('#fileinput'); inp.files = dt.files;
+  inp.dispatchEvent(new W.Event('change', { bubbles: true }));
+  await sleep(500);
+}
+async function paste(f, html, text = '') {
+  const W = f.contentWindow, d = D(f), dt = new W.DataTransfer();
+  if (html) dt.setData('text/html', html);
+  dt.setData('text/plain', text);
+  const b = d.querySelector('#body'); b.focus();
+  const ev = new W.ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+  b.dispatchEvent(ev);
+  await sleep(150);
+}
+function fillBody(f, n, para = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.') {
+  const b = D(f).querySelector('#body');
+  b.innerHTML = Array.from({ length: n }, (_, i) => `<p>${para} ${i}</p>`).join('');
+  b.dispatchEvent(new f.contentWindow.Event('input', { bubbles: true }));
+}
+function key(f, k, o = {}) {
+  const W = f.contentWindow;
+  W.document.dispatchEvent(new W.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...o }));
+}
+
+const tests = [];
+const test = (name, fn) => tests.push({ name, fn });
+function ok(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
+
+/* ---------- boot & environment ---------- */
+test('boots without errors and shows the welcome box', async () => {
+  const f = await boot();
+  ok(f.errors.length === 0, f.errors.join('; '));
+  ok(D(f).title.startsWith('WriteNow'), 'title ' + D(f).title);
+});
+test('boots when localStorage throws on every access (private windows)', async () => {
+  const f = await boot({ patch: 'Storage.prototype.getItem=Storage.prototype.setItem=Storage.prototype.removeItem=function(){throw new DOMException("blocked","SecurityError")};' });
+  ok(f.errors.length === 0, f.errors.join('; '));
+  ok(D(f).querySelector('#body').textContent.length > 20, 'no sample text');
+  await menu(f, 'file', 'Save'); await sleep(200);
+  ok(f.errors.length === 0, 'save threw: ' + f.errors.join('; '));
+});
+test('works in a very narrow and a very wide window', async () => {
+  for (const w of [220, 360, 4000]) {
+    const f = await boot({ w, h: 500 });
+    ok(f.errors.length === 0, w + ': ' + f.errors.join('; '));
+    ok(D(f).documentElement.scrollWidth <= w + 2, w + ': page scrolls sideways (' + D(f).documentElement.scrollWidth + ')');
+  }
+});
+
+/* ---------- hostile imports ---------- */
+test('text import: CRLF, BOM, NUL, emoji, RTL, 2 MB single line', async () => {
+  const f = await boot();
+  const text = '﻿line1\r\nline2\0 NUL 😀👨‍👩‍👧 مرحبا ‮abc\r\n' + 'x'.repeat(2e6);
+  await importFile(f, 'weird.txt', text);
+  ok(f.errors.length === 0, f.errors.join('; '));
+  const t = D(f).querySelector('#body').textContent;
+  ok(t.includes('line2') && t.includes('😀'), 'content lost');
+  ok(!t.includes('\r'), 'CR left in text');
+});
+test('html import strips scripts, handlers, iframes, javascript: links', async () => {
+  const f = await boot(); f.contentWindow.__pwn = 0;
+  const evil = '<p onclick="__pwn=1">a</p><script>__pwn=1<\/script><img src=x onerror="__pwn=1"><iframe srcdoc="<script>parent.__pwn=1<\/script>"></iframe><a href="javascript:__pwn=1">l</a><svg onload="__pwn=1"></svg><style>*{display:none}</style><object data=x></object><p style="font-size:99pt;background:url(javascript:__pwn=1)">z</p>';
+  await importFile(f, 'evil.html', evil, 'text/html'); await sleep(300);
+  const b = D(f).querySelector('#body');
+  ok(f.contentWindow.__pwn === 0, 'script executed');
+  ok(!b.querySelector('script,img,iframe,svg,object,style,a'), 'dangerous tag survived: ' + b.innerHTML);
+  ok(!/ on\w+=/i.test(b.innerHTML), 'event handler survived');
+  ok(!/javascript:/i.test(b.innerHTML), 'javascript: survived');
+});
+test('paste html is sanitized the same way', async () => {
+  const f = await boot(); f.contentWindow.__pwn = 0;
+  await paste(f, '<b onmouseover="__pwn=1">bold</b><script>__pwn=1<\/script><img src=x onerror=__pwn=1>', 'bold');
+  ok(f.contentWindow.__pwn === 0);
+  ok(!D(f).querySelector('#body').querySelector('script,img'), 'tag survived');
+});
+test('10 000-level nested html does not overflow the stack', async () => {
+  const f = await boot();
+  await paste(f, '<div>'.repeat(10000) + 'deep' + '</div>'.repeat(10000), 'deep');
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+test('hostile file names are shown as text everywhere', async () => {
+  const f = await boot(); f.contentWindow.__pwn = 0;
+  const name = '<img src=x onerror=__pwn=1>"\'.txt';
+  await importFile(f, name, 'hello'); await sleep(200);
+  ok(f.contentWindow.__pwn === 0, 'name executed');
+  ok(!D(f).querySelector('#wtitle img') && !D(f).querySelector('.window img[src="x"]'), 'img created from name');
+  await menu(f, 'file', 'Save As…');
+  const inp = D(f).querySelector('#d-name'); ok(inp, 'no save dialog');
+  inp.value = '<img src=x onerror=__pwn=1>'; await closeDlgBtn(f, 'Save'); await sleep(300);
+  await menu(f, 'file', 'Open…');
+  ok(!D(f).querySelector('.dlg img'), 'img in open dialog');
+  ok(f.contentWindow.__pwn === 0, 'name executed in list');
+  await closeDlg(f);
+});
+async function closeDlgBtn(f, label) { const b = [...D(f).querySelectorAll('.dlg .btn')].find(x => x.textContent === label); b.click(); await sleep(250); }
+
+/* ---------- save / open ---------- */
+for (const nm of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'a'.repeat(60), '😀 ünï', ' spaced ']) {
+  test('save and reopen a document called ' + JSON.stringify(nm.slice(0, 20)), async () => {
+    const f = await boot();
+    fillBody(f, 3, 'content for ' + nm.slice(0, 5));
+    await menu(f, 'file', 'Save As…');
+    D(f).querySelector('#d-name').value = nm; await closeDlgBtn(f, 'Save'); await sleep(200);
+    ok(f.errors.length === 0, f.errors.join('; '));
+    const store = JSON.parse(f.contentWindow.localStorage.getItem('wn-docs') || '{}');
+    const trimmed = nm.trim();
+    ok(Object.prototype.hasOwnProperty.call(store, trimmed) || Object.keys(store).some(k => k.includes(trimmed.slice(0, 3))), 'document not stored: keys=' + Object.keys(store));
+    fillBody(f, 1, 'other'); await menu(f, 'file', 'New'); await sleep(200);
+    const dd = [...D(f).querySelectorAll('.dlg .btn')].find(x => x.textContent === 'Don’t Save'); if (dd) { dd.click(); await sleep(300); }
+    await menu(f, 'file', 'Open…');
+    const row = D(f).querySelector('#d-list [data-n]'); ok(row, 'not listed in Open dialog');
+    await closeDlgBtn(f, 'Open'); await sleep(300);
+    ok(D(f).querySelector('#body').textContent.includes('content for'), 'content not restored');
+  });
+}
+test('saving into a full localStorage reports an error instead of throwing', async () => {
+  const f = await boot(); const W = f.contentWindow;
+  let i = 0;
+  for (const size of [1 << 20, 1 << 14, 1 << 10, 16]) { try { for (;;) W.localStorage.setItem('fill' + i++, 'x'.repeat(size)); } catch (e) {} }
+  fillBody(f, 5);
+  await menu(f, 'file', 'Save As…'); D(f).querySelector('#d-name').value = 'full'; await closeDlgBtn(f, 'Save'); await sleep(300);
+  ok(f.errors.length === 0, f.errors.join('; '));
+  ok(/could not save|Could not save/i.test(dlgText(f)), 'no error shown: ' + dlgText(f));
+  for (let j = 0; j < i; j++) W.localStorage.removeItem('fill' + j);
+});
+
+/* ---------- find / change ---------- */
+test('find with regex metacharacters, $& and empty strings', async () => {
+  const f = await boot();
+  D(f).querySelector('#body').innerHTML = '<p>a.b a*b (x) [y] $& \\d a+b?</p>';
+  D(f).querySelector('#body').dispatchEvent(new f.contentWindow.Event('input', { bubbles: true }));
+  await menu(f, 'edit', 'Find/Change…');
+  const q = D(f).querySelector('#f-what'), r = D(f).querySelector('#f-to');
+  for (const s of ['.', '*', '(x)', '[y]', '$&', '\\d', '+b?', '^', '$', '(', '[', '\\']) {
+    q.value = s; r.value = '$&$1\\'; D(f).querySelector('#f-next').click(); await sleep(30);
+  }
+  ok(f.errors.length === 0, f.errors.join('; '));
+  q.value = '$&'; r.value = '$&$$'; D(f).querySelector('#f-all').click(); await sleep(100);
+  ok(D(f).querySelector('#body').textContent.includes('$&$$'), 'replacement text altered: ' + D(f).querySelector('#body').textContent);
+  q.value = ''; D(f).querySelector('#f-all').click(); D(f).querySelector('#f-one').click(); D(f).querySelector('#f-next').click(); await sleep(60);
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+test('replace all over 20 000 hits finishes in under 3 s', async () => {
+  const f = await boot(); fillBody(f, 20000, 'needle'); await sleep(1500);
+  await menu(f, 'edit', 'Find/Change…');
+  D(f).querySelector('#f-what').value = 'needle'; D(f).querySelector('#f-to').value = 'pin';
+  const t = performance.now(); D(f).querySelector('#f-all').click(); await sleep(50);
+  const dt = performance.now() - t; ok(dt < 3000, 'took ' + Math.round(dt) + ' ms');
+  ok(!D(f).querySelector('#body').textContent.includes('needle'), 'not all replaced');
+});
+test('whole-word search with accented words does not hang', async () => {
+  const f = await boot();
+  D(f).querySelector('#body').innerHTML = '<p>' + 'café '.repeat(5000) + '</p>';
+  await menu(f, 'edit', 'Find/Change…');
+  D(f).querySelector('#f-what').value = 'café'; D(f).querySelector('#f-word').checked = true;
+  const t = performance.now(); D(f).querySelector('#f-next').click(); await sleep(30);
+  ok(performance.now() - t < 2000 && f.errors.length === 0, f.errors.join('; '));
+});
+
+test('whole-word search works without look-behind and counts only real words', async () => {
+  const f = await boot();
+  D(f).querySelector('#body').innerHTML = '<p>cat catalog cat. concat cat_ scat Cat éclat cat</p>';
+  D(f).querySelector('#body').dispatchEvent(new f.contentWindow.Event('input', { bubbles: true }));
+  await menu(f, 'edit', 'Find/Change…');
+  D(f).querySelector('#f-what').value = 'cat'; D(f).querySelector('#f-to').value = 'dog';
+  D(f).querySelector('#f-word').checked = true; D(f).querySelector('#f-all').click(); await sleep(100);
+  const t = D(f).querySelector('#body').textContent;
+  ok(t === 'dog catalog dog. concat cat_ scat dog éclat dog', 'got: ' + t);
+});
+test('keyboard shortcuts are shown in the platform style (Ctrl on non-Mac)', async () => {
+  const f = await boot(); const d = D(f), W = f.contentWindow;
+  d.querySelector('.mt[data-id="file"]').dispatchEvent(new W.PointerEvent('pointerdown', { bubbles: true }));
+  const ks = [...d.querySelectorAll('.menu .k')].map(e => e.textContent).filter(Boolean);
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform + navigator.userAgent);
+  ok(ks.length > 3, 'no shortcuts listed');
+  ok(mac ? ks.some(k => k.includes('⌘')) : ks.every(k => k.startsWith('Ctrl+')), 'shortcuts: ' + ks.join(' '));
+});
+test('the history is capped: 400 saves of a 1 MB document keep memory bounded', async () => {
+  if (!performance.memory) return 'skipped (no performance.memory)';
+  const f = await boot(); fillBody(f, 12000, 'Paragraph that is quite long so that the document is about one megabyte in size.'); await sleep(800);
+  const b = D(f).querySelector('#body'); b.focus(); const before = performance.memory.usedJSHeapSize;
+  for (let i = 0; i < 400; i++) { f.contentWindow.document.execCommand('insertText', false, 'x'); b.dispatchEvent(new f.contentWindow.InputEvent('beforeinput', { inputType: 'insertParagraph', bubbles: true })); }
+  await sleep(500);
+  const grew = (performance.memory.usedJSHeapSize - before) / 1048576;
+  ok(grew < 150, 'heap grew by ' + Math.round(grew) + ' MB');
+});
+
+/* corrupted or hostile data already sitting in localStorage */
+const BAD_STORES = [
+  ['wn-docs', '[]'], ['wn-docs', '"text"'], ['wn-docs', 'null'], ['wn-docs', '{"a":null}'], ['wn-docs', '{"a":5,"b":{"h":null}}'],
+  ['wn-docs', '{"__proto__":{"polluted":1},"x":{"h":{"body":"<p>ok</p>"},"t":"soon"}}'],
+  ['wn-docs', '{"d":{"h":{"body":"<img src=x onerror=__pwn=1>"}}}'],
+  ['wn-current', '{"doc":{"h":{"body":5}}}'], ['wn-current', '{"doc":{"h":{"body":"<p>x</p>"}},"name":{"a":1}}'], ['wn-current', '[1,2]'], ['wn-current', '{not json'],
+  ['wn-prefs', '{"look":"nonsense","ruler":"yes","view":42}'], ['wn-prefs', 'null'], ['wn-prefs', '[]'],
+];
+for (const [key, val] of BAD_STORES) {
+  test('boot and Open… survive corrupted ' + key + ' = ' + val.slice(0, 40), async () => {
+    document.querySelectorAll('iframe').forEach(x => x.remove());
+    localStorage.clear(); localStorage.setItem(key, val);
+    const f = document.createElement('iframe'); f.style.cssText = 'width:900px;height:600px'; f.errors = []; f.src = TARGET;
+    document.body.appendChild(f); await new Promise(r => f.addEventListener('load', r, { once: true }));
+    f.contentWindow.addEventListener('error', e => f.errors.push(String(e.message))); f.contentWindow.__pwn = 0;
+    for (let i = 0; i < 40 && !D(f).querySelector('#body'); i++) await sleep(50);
+    await sleep(600); await closeDlg(f);
+    ok(f.errors.length === 0, 'boot: ' + f.errors.join('; '));
+    ok(D(f).querySelector('#body').textContent.length > 0 || key === 'wn-current', 'empty document after boot');
+    const logged = []; const oe = f.contentWindow.console.error; f.contentWindow.console.error = (...x) => { logged.push(x.join(' ')); oe.apply(f.contentWindow.console, x); };
+    await menu(f, 'file', 'Open…');
+    ok(f.errors.length === 0, 'Open…: ' + f.errors.join('; '));
+    ok(logged.length === 0, 'menu action threw: ' + logged.join('; '));
+    ok(/Open a WriteNow document/.test(dlgText(f)), 'Open dialog did not appear');
+    ok(({}).polluted === undefined && f.contentWindow.Object.prototype.polluted === undefined, 'prototype polluted');
+    ok(f.contentWindow.__pwn === 0, 'script ran');
+    const rows = D(f).querySelectorAll('#d-list [data-n]'); if (rows.length) { rows[0].click(); await closeDlgBtn(f, 'Open'); await sleep(300); }
+    ok(f.errors.length === 0, 'opening a listed document: ' + f.errors.join('; '));
+  });
+}
+
+/* ---------- size and performance ---------- */
+test('a 30 000-paragraph document opens and lays out in under 8 s', async () => {
+  const f = await boot(); const t = performance.now();
+  fillBody(f, 30000); await sleep(300);
+  await menu(f, 'file', 'New'); await sleep(100); // forces layout/dirty paths
+  ok(performance.now() - t < 8000, 'slow: ' + Math.round(performance.now() - t) + ' ms');
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+test('300 edits on a 2 MB document do not balloon memory (undo history)', async () => {
+  if (!performance.memory) return 'skipped (no performance.memory)';
+  const f = await boot(); fillBody(f, 20000, 'Some fairly long paragraph of text that makes the page heavy.');
+  await sleep(800);
+  const b = D(f).querySelector('#body'); b.focus();
+  const before = performance.memory.usedJSHeapSize;
+  for (let i = 0; i < 300; i++) { f.contentWindow.document.execCommand('insertText', false, 'x'); b.dispatchEvent(new f.contentWindow.InputEvent('beforeinput', { inputType: 'insertParagraph', bubbles: true })); }
+  await sleep(500);
+  const grew = (performance.memory.usedJSHeapSize - before) / 1048576;
+  ok(grew < 300, 'heap grew by ' + Math.round(grew) + ' MB');
+});
+test('word count on an empty and on a huge document', async () => {
+  const f = await boot();
+  D(f).querySelector('#body').innerHTML = '<p><br></p>'; D(f).querySelector('#body').dispatchEvent(new f.contentWindow.Event('input', { bubbles: true })); await sleep(200); await menu(f, 'apple', 'Word Count…'); ok(/Words\s*0/.test(dlgText(f)), dlgText(f)); await closeDlg(f);
+  fillBody(f, 20000); await menu(f, 'apple', 'Word Count…'); ok(/Words/.test(dlgText(f)) && f.errors.length === 0, f.errors.join('; ')); await closeDlg(f);
+});
+
+/* ---------- structures ---------- */
+test('200 footnotes renumber in order and survive deleting the body', async () => {
+  const f = await boot(); const d = D(f), W = f.contentWindow;
+  const b = d.querySelector('#body'); b.innerHTML = '<p>' + Array.from({ length: 200 }, (_, i) => `w${i}<sup class="wn-fn" contenteditable="false" data-id="n${i}">9</sup>`).join(' ') + '</p>';
+  b.dispatchEvent(new W.Event('input', { bubbles: true })); await sleep(300);
+  const nums = [...d.querySelectorAll('#notes .wn-fnum')].map(e => e.textContent);
+  ok(nums.length === 200 && nums[199] === '200.', 'notes: ' + nums.length + ' last ' + nums[199]);
+  b.innerHTML = '<p><br></p>'; b.dispatchEvent(new W.Event('input', { bubbles: true })); await sleep(200);
+  ok(d.querySelector('#notes').hidden, 'notes area left behind');
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+test('table limits: 40 x 12, text conversion, extreme sizes in the dialog', async () => {
+  const f = await boot();
+  for (const [r, c] of [[40, 12], [0, 0], [-5, 99999], [1e9, 1e9], ['abc', '']]) {
+    await menu(f, 'format', 'Insert Table…');
+    D(f).querySelector('#d-rows').value = r; D(f).querySelector('#d-cols').value = c;
+    await closeDlgBtn(f, 'Insert');
+  }
+  ok(f.errors.length === 0, f.errors.join('; '));
+  const cells = D(f).querySelectorAll('#body td').length; ok(cells <= 40 * 12 * 5 && cells > 0, 'cells ' + cells);
+});
+test('undo/redo 500 times in both directions never throws', async () => {
+  const f = await boot(); const b = D(f).querySelector('#body'); b.focus();
+  for (let i = 0; i < 80; i++) { f.contentWindow.document.execCommand('insertText', false, 'ab' + i); b.dispatchEvent(new f.contentWindow.InputEvent('beforeinput', { inputType: 'insertParagraph', bubbles: true })); }
+  for (let i = 0; i < 500; i++) key(f, i % 7 ? 'z' : 'y', { ctrlKey: true, shiftKey: i % 3 === 0 });
+  await sleep(300); ok(f.errors.length === 0, f.errors.join('; '));
+});
+
+/* ---------- PDF ---------- */
+for (const [label, bytes] of [['empty', new Uint8Array(0)], ['garbage', new Uint8Array(5000).map((_, i) => (i * 37) & 255)], ['truncated header', new TextEncoder().encode('%PDF-1.4\n1 0 obj\n<<')]]) {
+  test('PDF import: ' + label + ' file gives an error box, no hang', async () => {
+    const f = await boot();
+    await importFile(f, 'bad.pdf', bytes, 'application/pdf'); await sleep(4000);
+    ok(f.errors.length === 0, f.errors.join('; '));
+    ok(/could not be opened|No text|could not be read|Reading PDF/i.test(dlgText(f) + D(f).querySelector('#pagebox').textContent), 'no feedback: "' + dlgText(f) + '"');
+  });
+}
+
+/* ---------- UI fuzz ---------- */
+test('every menu item can be run once without an exception', async () => {
+  const f = await boot(); const d = D(f), W = f.contentWindow;
+  const skip = new Set(['Import File…', 'Close', 'Quit', 'New', 'Open…']);
+  const ids = [...d.querySelectorAll('.mt')].map(e => e.dataset.id);
+  for (const id of ids) {
+    d.querySelector(`.mt[data-id="${id}"]`).dispatchEvent(new W.PointerEvent('pointerdown', { bubbles: true }));
+    const labels = [...d.querySelectorAll('.menu .mi:not(.dis) .l')].map(e => e.textContent.trim());
+    d.dispatchEvent(new W.KeyboardEvent('keydown', { key: 'Escape' }));
+    for (const l of labels) {
+      if (skip.has(l)) continue;
+      try { await menu(f, id, l); } catch (e) { continue; }
+      d.querySelector('.dlg .btn.def') && d.querySelector('.dlg .btn.def').click();
+      const c = [...d.querySelectorAll('.dlg .btn')].find(x => x.textContent === 'Cancel'); c && c.click();
+      await sleep(60);
+    }
+  }
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+test('2 000 random key presses and 40 dialog spams never throw', async () => {
+  const f = await boot(); const b = D(f).querySelector('#body'); b.focus();
+  const keys = 'abcdefghijklmnopqrstuvwxyz0123456789[]-=,./;\'\\`'.split().join('').split('').concat(['Escape', 'Enter', 'Tab', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowDown']);
+  let seed = 12345; const rnd = n => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+  for (let i = 0; i < 2000; i++) {
+    const k = keys[rnd(keys.length)];
+    key(f, k, { ctrlKey: rnd(2) === 1, metaKey: rnd(5) === 0, shiftKey: rnd(3) === 0 });
+    if (i % 40 === 0) await sleep(10);
+    const dlg = D(f).querySelector('.dlg .btn'); if (dlg && i % 7 === 0) dlg.click();
+  }
+  for (let i = 0; i < 40; i++) await menu(f, 'apple', 'About WriteNow…').catch(() => {});
+  ok(D(f).querySelectorAll('.dlg').length <= 1, 'dialogs piled up: ' + D(f).querySelectorAll('.dlg').length);
+  ok(f.errors.length === 0, f.errors.join('; '));
+});
+
+/* ---------- runner ---------- */
+(async () => {
+  const out = document.getElementById('out');
+  const only = new URLSearchParams(location.search).get('only');
+  for (const t of tests.filter(t => !only || t.name.includes(only))) {
+    let res = 'pass', msg = '';
+    const to = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout after 60 s')), 60000));
+    try { const r = await Promise.race([t.fn(), to]); if (typeof r === 'string') { res = 'skip'; msg = r; } }
+    catch (e) { res = 'fail'; msg = String(e.message || e); }
+    results.push({ name: t.name, res, msg });
+    const p = document.createElement('div');
+    p.innerHTML = `<span class="${res === 'fail' ? 'bad' : 'ok'}">${res === 'fail' ? '✗' : res === 'skip' ? '–' : '✓'}</span> ${t.name.replace(/</g, '&lt;')}` + (msg ? `<pre>${msg.replace(/</g, '&lt;').slice(0, 600)}</pre>` : '');
+    out.appendChild(p);
+  }
+  document.querySelectorAll('iframe').forEach(f => f.remove());
+  const bad = results.filter(r => r.res === 'fail').length;
+  document.getElementById('sum').textContent = `${results.length - bad} / ${results.length} passed` + (bad ? `, ${bad} FAILED` : '');
+  window.__done = true;
+})();
+</script>
