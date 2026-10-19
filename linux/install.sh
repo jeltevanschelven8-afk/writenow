@@ -21,7 +21,6 @@ if ! find_browser >/dev/null; then
   echo "No Chromium-based browser found (Chrome, Chromium, Edge, Brave or Vivaldi)."
   echo "Install one, for example:  sudo apt install chromium   (Debian/Ubuntu)"
   echo "                           sudo dnf install chromium   (Fedora)"
-  echo "WriteNow can also be opened by double-clicking index.html in any browser."
   exit 1
 fi
 
@@ -54,13 +53,13 @@ urlencode() {
   printf '%s' "$out"
 }
 
-URL="file://$DEST/index.html"
+URL="file://$DEST/index.html?app=1"
 if [ "$#" -ge 1 ] && [ -f "$1" ]; then
   FILE="$(readlink -f "$1")"
-  URL="$URL?pdf=$(urlencode "$FILE")"
+  URL="$URL&pdf=$(urlencode "$FILE")"
 fi
 
-BROWSER="$(find_browser)" || { xdg-open "$DEST/index.html"; exit 0; }
+BROWSER="$(find_browser)" || { echo "WriteNow needs Chrome, Chromium, Edge, Brave or Vivaldi." >&2; exit 1; }
 exec "$BROWSER" \
   --user-data-dir="$DEST/profile" \
   --no-first-run --no-default-browser-check --disable-sync \

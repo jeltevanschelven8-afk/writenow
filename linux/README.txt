@@ -17,11 +17,6 @@ Right-click a PDF > Open With > WriteNow. You can also use File > Import File...
 The text of the PDF arrives as an editable document (scans without text don't
 work, and opening PDFs needs internet).
 
-NO INSTALL
-Double-click index.html: it opens in your normal browser. That works with
-Firefox too, but Firefox has no app window, and saved documents stay in that
-browser.
-
 REMOVE
     bash uninstall.sh
 
