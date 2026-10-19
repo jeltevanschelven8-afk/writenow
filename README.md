@@ -14,9 +14,15 @@ WriteNow is a tribute to the fast, simple word processors of the early Mac era: 
 
 | | Download | Then |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | [WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip) | unzip, double-click `install.cmd` |
+| 🪟 **Windows 10 / 11** | no download needed | open **Windows PowerShell** and paste the install command below |
 | 🍎 **macOS 11 or newer** | [WriteNow-for-Mac.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Mac.zip) | unzip, run `make-app.command` once in Terminal |
 | 🐧 **Linux** | [WriteNow-for-Linux.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Linux.zip) | unzip, run `bash install.sh` |
+
+**Windows install command** (paste into Windows PowerShell and press Enter):
+
+```
+irm https://raw.githubusercontent.com/jeltevanschelven8-afk/writenow/main/windows/web-install.ps1 | iex
+```
 
 After installing, start WriteNow from the Start menu, the Applications folder or your app menu. Step-by-step instructions, updating, uninstalling and troubleshooting are in the **[installation guide](docs/INSTALL.md)**.
 
@@ -64,7 +70,7 @@ WriteNow only starts as an installed program; opening its files directly in a we
 ```
 writenow.html    the whole program: the source of everything
 build.py         builds the three packages from writenow.html
-windows/         install.cmd and uninstall.cmd (run the .ps1 scripts), icon
+windows/         web-install.ps1 (one-line installer), install.ps1, uninstall.ps1, .cmd shortcuts, icon
 mac/             main.swift (native wrapper), make-app.command, icon
 linux/           install.sh, uninstall.sh, icon
 tests/           stress tests
