@@ -1,68 +1,155 @@
-# Installation guide
+# Installing WriteNow
 
-Download or clone this repository first. On GitHub choose **Code > Download ZIP** and unzip it.
+Pick your system:
+
+- [Windows](#windows) · [macOS](#macos) · [Linux](#linux) · [Any browser, no install](#any-browser-no-install) · [Your own website](#your-own-website)
+- After installing: [first steps](#first-steps) · [keyboard shortcuts](#keyboard-shortcuts) · [updating](#updating) · [troubleshooting](#troubleshooting)
+
+None of the installers need administrator or root rights, and none of them change your default apps.
+
+---
 
 ## Windows
 
-Requires Windows 10 or 11 with Microsoft Edge (already installed on Windows).
+**You need:** Windows 10 or 11. Microsoft Edge is used for the app window and is already part of Windows.
 
-1. Open the `windows` folder.
-2. Right-click `install.ps1` and choose **Run with PowerShell**.
-3. Find **WriteNow** in the Start menu and on your desktop.
+1. Download **[WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip)**.
+2. Right-click the zip and choose **Extract All…**, then **Extract**.
+3. In the extracted folder, right-click **install.ps1** and choose **Run with PowerShell**.
+   A blue window appears for a moment and reports *"WriteNow is installed"*.
+4. Start **WriteNow** from the Start menu or from the new icon on your desktop.
 
-No administrator rights are needed. WriteNow opens in its own Edge window without an address bar, using its own profile, and is offered under **Open with** for PDF files.
+What the installer does:
 
-If PowerShell refuses to run the script, open PowerShell in the folder and run:
+| | |
+|---|---|
+| Program files | `%LOCALAPPDATA%\Programs\WriteNow` |
+| Shortcuts | Start menu and desktop |
+| PDF files | adds **Open with › WriteNow** (your default PDF app stays the same) |
+| App window | Edge with its own profile, no address bar or tabs |
 
-```
-powershell -ExecutionPolicy Bypass -File install.ps1
-```
+> **"Running scripts is disabled on this system"?** Open the folder, click the address bar, type `powershell` and press Enter. In the window that opens, type:
+> ```
+> powershell -ExecutionPolicy Bypass -File install.ps1
+> ```
+> This allows the script for this one run only and does not change any settings.
 
-To remove it, run `uninstall.ps1` the same way.
+**Uninstall:** right-click **uninstall.ps1** › **Run with PowerShell**. This removes the program, the shortcuts, the PDF entry and the documents saved inside WriteNow.
+
+---
 
 ## macOS
 
-Requires macOS 11 (Big Sur) or newer and Apple's free Command Line Tools. The script offers to install them if they are missing.
+**You need:** macOS 11 (Big Sur) or newer, on Intel or Apple silicon. The first time, macOS installs Apple's free *Command Line Tools* (about 5 minutes, done once).
 
-1. Open the `mac` folder.
-2. Open **Terminal** (Applications > Utilities).
-3. Type `bash ` (with a space), drag `make-app.command` into the window and press Enter.
-4. After about half a minute `WriteNow.app` appears in the folder. Drag it to **Applications**.
+The Mac version is a real app. It is built on your own Mac in about half a minute, so macOS trusts it and shows no "unidentified developer" warning.
 
-The app is built on your own Mac, so macOS does not show an "unidentified developer" warning. Right-click a PDF and choose **Open With > WriteNow** to import it. For the old-Mac feeling, press Control+Command+F for full screen.
+1. Download **[WriteNow-for-Mac.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Mac.zip)** and double-click it to unzip.
+2. Open **Terminal** (Finder › Applications › Utilities › Terminal, or press ⌘ Space and type *Terminal*).
+3. Type `bash` followed by a **space**. Do not press Enter yet.
+4. Drag **make-app.command** from the unzipped folder into the Terminal window, then press **Enter**.
+5. If macOS asks to install the *Command Line Tools*, click **Install**, wait until it is done, and repeat steps 3 and 4.
+6. A Finder window opens with **WriteNow.app**. Drag it to **Applications**, then open it with a double-click. Right-click its Dock icon › Options › **Keep in Dock** if you like.
+
+| | |
+|---|---|
+| Program | `/Applications/WriteNow.app` (wherever you put it) |
+| PDF files | right-click a PDF › **Open With › WriteNow** |
+| Full screen | Control ⌘ F, for the real 1984 feeling |
+
+**Uninstall:** drag **WriteNow.app** to the Trash.
+
+---
 
 ## Linux
 
-Requires a desktop Linux and a Chromium-based browser (Chrome, Chromium, Edge, Brave or Vivaldi).
+**You need:** a desktop Linux (Ubuntu, Debian, Fedora, Mint, Arch, …) and a Chromium-based browser: Chrome, Chromium, Edge, Brave or Vivaldi. If you have none of them:
 
 ```
-sudo apt install chromium      # Debian / Ubuntu
-sudo dnf install chromium      # Fedora
+sudo apt install chromium        # Debian, Ubuntu, Mint
+sudo dnf install chromium        # Fedora
+sudo pacman -S chromium          # Arch
 ```
 
-1. Open a terminal in the `linux` folder.
-2. Run `bash install.sh`.
-3. Search for **WriteNow** in your applications menu.
+1. Download **[WriteNow-for-Linux.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Linux.zip)** and unzip it.
+2. Open a terminal in the unzipped folder (right-click › *Open in Terminal* in most file managers).
+3. Run:
+   ```
+   bash install.sh
+   ```
+4. Open your applications menu and search for **WriteNow**.
 
-The files go to `~/.local/share/writenow` and no root access is needed. Right-click a PDF and choose **Open With > WriteNow**. Remove it with `bash uninstall.sh`.
+| | |
+|---|---|
+| Program files | `~/.local/share/writenow` |
+| Menu entry | `~/.local/share/applications/writenow.desktop` |
+| PDF files | right-click a PDF › **Open With › WriteNow** |
 
-## Web
+**Uninstall:** `bash uninstall.sh` in the same folder.
 
-- **Single file:** run `python build.py`, then double-click `dist/WriteNow.html`. It opens in any browser.
-- **Host it:** upload the `website/` folder to any static host (Netlify Drop, Cloudflare Pages, GitHub Pages). Visitors can install it as an app: Safari **File > Add to Dock** on macOS, the install icon in the address bar of Edge or Chrome, or **Add to Home Screen** on a phone.
+---
 
-## Using WriteNow
+## Any browser, no install
 
-- Shortcuts use **Ctrl** on Windows and Linux and **Command** on macOS: S save, O open, Z undo, F find, B / I / U bold, italic, underline.
-- Some browsers keep a few shortcuts for themselves (such as Ctrl+N or Ctrl+W). The menu always works.
-- Use **File > Import File** to open a text, HTML or PDF file. Opening PDFs needs internet access the first time.
-- Documents are stored in the app or browser profile on that computer; they are not uploaded anywhere.
+1. Download **[WriteNow.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow.zip)** and unzip it.
+2. Double-click **WriteNow.html**.
+
+It opens as a normal browser tab in Chrome, Edge, Firefox or Safari. This is also the easiest way to send WriteNow to someone: attach the zip to an e-mail.
+
+> If the file opens in a text or code editor instead of a browser, right-click it and choose **Open with** › your browser.
+
+---
+
+## Your own website
+
+Upload the `website` folder from this repository to any free static host:
+
+- **Netlify:** go to app.netlify.com/drop and drag the folder onto the page.
+- **Cloudflare Pages:** Workers & Pages › Create › Pages › Upload assets.
+- **GitHub Pages:** in a repository, Settings › Pages › deploy from a branch.
+
+Visitors can then install WriteNow from their browser: Safari **File › Add to Dock** on macOS 14+, the install icon in the address bar in Edge and Chrome, or **Add to Home Screen** on a phone or tablet. The site keeps working offline after the first visit.
+
+---
+
+## First steps
+
+- Click **Start writing** on the welcome box and type. The sample text explains the ruler and menus.
+- **File › New** starts an empty document, **File › Save** keeps it, **File › Open…** brings it back.
+- **File › Import File…** opens a text, HTML or PDF file as a new document. You can also drag a file onto the page.
+- **View › Platinum** switches to the grey Mac OS 8 look; **View › Show Ruler** and **Show Invisibles** toggle the ruler and ¶ marks.
+
+Your documents are stored on your own computer, inside WriteNow (or the browser, for the single-file version). They are not shared between computers or browsers.
+
+## Keyboard shortcuts
+
+On Windows and Linux use **Ctrl**, on macOS use **⌘**. The menus show the right key for your system.
+
+| Key | Action | Key | Action |
+|---|---|---|---|
+| S | Save | Shift H | Header |
+| O | Open | Shift F | Footer |
+| Z / Shift Z | Undo / Redo | Shift B | Page break |
+| F / G | Find / Find again | ] / [ | Bigger / smaller text |
+| B / I / U | Bold / Italic / Underline | Shift P | Plain text |
+
+Some shortcuts belong to the browser (for example Ctrl N or Ctrl W) and cannot be used by WriteNow; the menus always work.
+
+## Updating
+
+Download the newest zip and run the installer again (Windows, Linux) or `make-app.command` again (macOS). Your saved documents are kept.
 
 ## Troubleshooting
 
-| Problem | What to do |
+| Problem | Solution |
 |---|---|
-| Windows: nothing happens after install | Open the Start menu and search for WriteNow; check that Microsoft Edge is installed |
-| macOS: `make-app.command` shows a compile error | Open an issue and paste the output |
-| Linux: "No Chromium-based browser found" | Install Chromium, or double-click `index.html` to use any browser |
-| A PDF does not open | Check your internet connection; scanned PDFs without text cannot be imported |
+| Windows: *"Running scripts is disabled"* | Use the command in the [Windows](#windows) section. |
+| Windows: the shortcut still shows an old icon | Restart Windows; the icon cache refreshes. |
+| macOS: `make-app.command` prints an error | [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and paste the full Terminal output. |
+| macOS: *"command not found: swiftc"* | Run `xcode-select --install`, then try again. |
+| Linux: *"No Chromium-based browser found"* | Install Chromium (see above), or use the [no-install version](#any-browser-no-install). |
+| A PDF does not open | Check the internet connection (the PDF reader loads on first use). Scanned PDFs contain no text and cannot be imported. |
+| *"Browser storage is full"* | Delete old documents with **File › Open… › Delete**. |
+| Courier, Helvetica or Times look different | Without internet, similar fonts from your system are used. The pixel fonts are always built in. |
+
+Still stuck? [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and say which system and browser you use.
