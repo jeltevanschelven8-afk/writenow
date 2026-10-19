@@ -11,16 +11,19 @@ None of the installers need administrator or root rights, and none of them chang
 
 ## Windows
 
-**You need:** Windows 10 or 11. Microsoft Edge is used for the app window and is already part of Windows.
+**You need:** Windows 10 or 11 and an internet connection. Microsoft Edge is used for the app window and is already part of Windows.
 
-1. Download **[WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip)**.
-2. Right-click the zip, choose **Extract All…**, then **Extract**.
-3. In the extracted folder, double-click **install.cmd**.
-   - If a blue box says **"Windows protected your PC"**, click **More info**, then **Run anyway**. This appears for every file downloaded from the internet that is not signed by a company.
-4. A black window shows *"WriteNow is installed"*. Press any key to close it.
-5. Start **WriteNow** from the Start menu or from the new icon on your desktop.
+1. Click **Start**, type **PowerShell** and open **Windows PowerShell**. (Not "Run as administrator" — that is not needed.)
+2. Copy this line, paste it into the blue window (right-click pastes) and press **Enter**:
 
-> Use **install.cmd**, not install.ps1. Windows blocks PowerShell scripts that come from the internet (*"is not digitally signed"*); install.cmd starts the same script with permission for that one run, without changing any Windows settings.
+   ```
+   irm https://raw.githubusercontent.com/jeltevanschelven8-afk/writenow/main/windows/web-install.ps1 | iex
+   ```
+
+3. Wait until it says *"WriteNow is installed"* (a few seconds), then close the window.
+4. Start **WriteNow** from the Start menu or from the new icon on your desktop.
+
+> **Why a command and not a file to double-click?** Windows 11 with *Smart App Control* blocks downloaded installer files that are not signed by a company (it shows *"Part of this app has been blocked"* or simply does nothing, and offers no way around it). The command above downloads WriteNow and installs it without opening any downloaded file, so nothing is blocked. It only installs for you, needs no administrator rights and changes no Windows settings. You can [read what it does](../windows/web-install.ps1) first.
 
 What the installer does:
 
@@ -32,7 +35,23 @@ What the installer does:
 | App window | its own window through Edge, with its own profile, no address bar or tabs |
 | Rights | no administrator rights needed |
 
-**Uninstall:** double-click **uninstall.cmd** in the same folder. This removes the program, the shortcuts, the PDF entry and the documents saved inside WriteNow.
+**Uninstall:** open Windows PowerShell and run:
+
+```
+irm https://raw.githubusercontent.com/jeltevanschelven8-afk/writenow/main/windows/uninstall.ps1 | iex
+```
+
+This removes the program, the shortcuts, the PDF entry and the documents saved inside WriteNow.
+
+<details>
+<summary><b>Alternative: install from the zip</b> (only on PCs without Smart App Control)</summary>
+
+1. Download **[WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip)** and extract it (right-click › **Extract All…**).
+2. Double-click **install.cmd**. If *"Windows protected your PC"* appears, click **More info** › **Run anyway**.
+3. To remove it later, double-click **uninstall.cmd**.
+
+Do not run install.ps1 directly: Windows blocks downloaded PowerShell scripts (*"is not digitally signed"*).
+</details>
 
 ---
 
@@ -113,14 +132,14 @@ A few shortcuts, such as Ctrl N and Ctrl W on Windows and Linux, are reserved by
 
 ## Updating
 
-Download the newest zip and run the installer again (Windows, Linux) or `make-app.command` again (macOS). Your saved documents are kept.
+Run the same install command again (Windows), `bash install.sh` with the newest zip (Linux), or `make-app.command` again (macOS). Your saved documents are kept.
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---|---|
-| Windows: *"is not digitally signed"* or *"running scripts is disabled"* | Double-click **install.cmd** instead of install.ps1. |
-| Windows: *"Windows protected your PC"* | Click **More info**, then **Run anyway**. |
+| Windows: *"is not digitally signed"*, *"Part of this app has been blocked"* or nothing happens | Use the PowerShell command in the [Windows](#windows) section instead of the files in the zip. |
+| Windows: *"Windows protected your PC"* (zip method) | Click **More info**, then **Run anyway**, or use the PowerShell command. |
 | Windows: the shortcut still shows an old icon | Restart Windows; the icon cache refreshes. |
 | macOS: `make-app.command` prints an error | [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and paste the full Terminal output. |
 | macOS: *"command not found: swiftc"* | Run `xcode-select --install`, then try again. |
