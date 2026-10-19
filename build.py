@@ -1,13 +1,10 @@
-"""Builds every WriteNow package from writenow.html.
-
-Output: index.html in windows/, mac/, linux/ and website/, plus dist/ with
-the zip files and the single-file WriteNow.html.
+"""Builds the WriteNow desktop packages from writenow.html.
 
     python build.py
 
-Writes index.html into the Windows, Mac, Linux and website folders, the
-single-file WriteNow.html, and the zip files. Icons and scripts that live in
-those folders are left alone.
+Writes index.html into windows/, mac/ and linux/, and the downloads to dist/.
+The packaged index.html only starts when it is opened by the installed program
+(see the check at the top of the script in writenow.html).
 """
 import os, re, zipfile
 
@@ -15,31 +12,23 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 os.chdir(HERE)
 
 page = open('writenow.html', encoding='utf-8').read()
-fav = re.search(r'<link rel="icon"[^>]+>\n', open('windows/index.html', encoding='utf-8').read()).group(0)
-base = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n')
+assert page.startswith('<title>'), 'writenow.html must start with <title>; do not save a built file over it'
+
+icon = open('windows/WriteNow.ico', 'rb').read()
+import base64
+fav = '<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,' + base64.b64encode(icon).decode() + '">\n'
+
+html = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n' + fav +
+        '<script>window.WN_REQUIRE_APP=true</script>\n' + page + '\n</html>\n')
 
 def write(path, text):
     open(path, 'w', encoding='utf-8', newline='\n').write(text)
 
-plain = base + fav + page + '\n</html>\n'
 for folder in ('windows', 'mac', 'linux'):
-    write(folder + '/index.html', plain)
-os.makedirs('dist', exist_ok=True)
-write('dist/WriteNow.html', plain)
+    write(folder + '/index.html', html)
 
-site_head = (base +
-    '<meta name="description" content="WriteNow: a quiet word processor in the style of the classic Macintosh, made by Jelte van Schelven. Beta.">\n'
-    '<meta name="theme-color" content="#000000">\n<meta name="apple-mobile-web-app-title" content="WriteNow">\n'
-    '<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="apple-touch-icon.png">\n' + fav)
-sw = ('<script>if("serviceWorker" in navigator&&location.protocol==="https:")'
-      'navigator.serviceWorker.register("sw.js").catch(function(){});</script>\n')
-write('website/index.html', site_head + page + '\n' + sw + '</html>\n')
-
-# Linux icon = the 512 px website icon
-open('linux/writenow.png', 'wb').write(open('website/icon-512.png', 'rb').read())
-
-def zip_folder(folder, out, executable=()):
+def zip_folder(folder, out):
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
         for f in sorted(os.listdir(folder)):
             path = os.path.join(folder, f)
@@ -50,13 +39,13 @@ def zip_folder(folder, out, executable=()):
                 data = data.replace(b'\r\n', b'\n')
             zi = zipfile.ZipInfo(os.path.basename(out)[:-4] + '/' + f)
             zi.compress_type = zipfile.ZIP_DEFLATED
-            zi.external_attr = (0o100755 if f in executable or f.endswith(('.command', '.sh')) else 0o100644) << 16
+            zi.external_attr = (0o100755 if f.endswith(('.command', '.sh')) else 0o100644) << 16
             z.writestr(zi, data)
 
-with zipfile.ZipFile('dist/WriteNow.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-    z.write('dist/WriteNow.html', 'WriteNow.html')
 os.makedirs('dist', exist_ok=True)
+for name in os.listdir('dist'):
+    os.remove(os.path.join('dist', name))
+zip_folder('windows', 'dist/WriteNow-for-Windows.zip')
 zip_folder('mac', 'dist/WriteNow-for-Mac.zip')
 zip_folder('linux', 'dist/WriteNow-for-Linux.zip')
-zip_folder('windows', 'dist/WriteNow-for-Windows.zip')
 print('built')
