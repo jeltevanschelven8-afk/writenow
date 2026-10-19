@@ -14,7 +14,7 @@ WriteNow is a tribute to the fast, simple word processors of the early Mac era: 
 
 | | Download | Then |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | [WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip) | unzip, right-click `install.ps1` › **Run with PowerShell** |
+| 🪟 **Windows 10 / 11** | [WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip) | unzip, double-click `install.cmd` |
 | 🍎 **macOS 11 or newer** | [WriteNow-for-Mac.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Mac.zip) | unzip, run `make-app.command` once in Terminal |
 | 🐧 **Linux** | [WriteNow-for-Linux.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Linux.zip) | unzip, run `bash install.sh` |
 
@@ -64,7 +64,7 @@ WriteNow only starts as an installed program; opening its files directly in a we
 ```
 writenow.html    the whole program: the source of everything
 build.py         builds the three packages from writenow.html
-windows/         install.ps1, uninstall.ps1, icon
+windows/         install.cmd and uninstall.cmd (run the .ps1 scripts), icon
 mac/             main.swift (native wrapper), make-app.command, icon
 linux/           install.sh, uninstall.sh, icon
 tests/           stress tests
