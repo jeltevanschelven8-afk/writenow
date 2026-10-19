@@ -14,10 +14,13 @@ None of the installers need administrator or root rights, and none of them chang
 **You need:** Windows 10 or 11. Microsoft Edge is used for the app window and is already part of Windows.
 
 1. Download **[WriteNow-for-Windows.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow-for-Windows.zip)**.
-2. Right-click the zip and choose **Extract All…**, then **Extract**.
-3. In the extracted folder, right-click **install.ps1** and choose **Run with PowerShell**.
-   A blue window appears for a moment and reports *"WriteNow is installed"*.
-4. Start **WriteNow** from the Start menu or from the new icon on your desktop.
+2. Right-click the zip, choose **Extract All…**, then **Extract**.
+3. In the extracted folder, double-click **install.cmd**.
+   - If a blue box says **"Windows protected your PC"**, click **More info**, then **Run anyway**. This appears for every file downloaded from the internet that is not signed by a company.
+4. A black window shows *"WriteNow is installed"*. Press any key to close it.
+5. Start **WriteNow** from the Start menu or from the new icon on your desktop.
+
+> Use **install.cmd**, not install.ps1. Windows blocks PowerShell scripts that come from the internet (*"is not digitally signed"*); install.cmd starts the same script with permission for that one run, without changing any Windows settings.
 
 What the installer does:
 
@@ -26,15 +29,10 @@ What the installer does:
 | Program files | `%LOCALAPPDATA%\Programs\WriteNow` |
 | Shortcuts | Start menu and desktop |
 | PDF files | adds **Open with › WriteNow** (your default PDF app stays the same) |
-| App window | Edge with its own profile, no address bar or tabs |
+| App window | its own window through Edge, with its own profile, no address bar or tabs |
+| Rights | no administrator rights needed |
 
-> **"Running scripts is disabled on this system"?** Open the folder, click the address bar, type `powershell` and press Enter. In the window that opens, type:
-> ```
-> powershell -ExecutionPolicy Bypass -File install.ps1
-> ```
-> This allows the script for this one run only and does not change any settings.
-
-**Uninstall:** right-click **uninstall.ps1** › **Run with PowerShell**. This removes the program, the shortcuts, the PDF entry and the documents saved inside WriteNow.
+**Uninstall:** double-click **uninstall.cmd** in the same folder. This removes the program, the shortcuts, the PDF entry and the documents saved inside WriteNow.
 
 ---
 
@@ -121,7 +119,8 @@ Download the newest zip and run the installer again (Windows, Linux) or `make-ap
 
 | Problem | Solution |
 |---|---|
-| Windows: *"Running scripts is disabled"* | Use the command in the [Windows](#windows) section. |
+| Windows: *"is not digitally signed"* or *"running scripts is disabled"* | Double-click **install.cmd** instead of install.ps1. |
+| Windows: *"Windows protected your PC"* | Click **More info**, then **Run anyway**. |
 | Windows: the shortcut still shows an old icon | Restart Windows; the icon cache refreshes. |
 | macOS: `make-app.command` prints an error | [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and paste the full Terminal output. |
 | macOS: *"command not found: swiftc"* | Run `xcode-select --install`, then try again. |
