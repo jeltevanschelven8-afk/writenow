@@ -2,7 +2,7 @@
 
 Pick your system:
 
-- [Windows](#windows) · [macOS](#macos) · [Linux](#linux) · [Any browser, no install](#any-browser-no-install) · [Your own website](#your-own-website)
+- [Windows](#windows) · [macOS](#macos) · [Linux](#linux)
 - After installing: [first steps](#first-steps) · [keyboard shortcuts](#keyboard-shortcuts) · [updating](#updating) · [troubleshooting](#troubleshooting)
 
 None of the installers need administrator or root rights, and none of them change your default apps.
@@ -89,37 +89,15 @@ sudo pacman -S chromium          # Arch
 
 ---
 
-## Any browser, no install
-
-1. Download **[WriteNow.zip](https://github.com/jeltevanschelven8-afk/writenow/raw/main/dist/WriteNow.zip)** and unzip it.
-2. Double-click **WriteNow.html**.
-
-It opens as a normal browser tab in Chrome, Edge, Firefox or Safari. This is also the easiest way to send WriteNow to someone: attach the zip to an e-mail.
-
-> If the file opens in a text or code editor instead of a browser, right-click it and choose **Open with** › your browser.
-
----
-
-## Your own website
-
-Upload the `website` folder from this repository to any free static host:
-
-- **Netlify:** go to app.netlify.com/drop and drag the folder onto the page.
-- **Cloudflare Pages:** Workers & Pages › Create › Pages › Upload assets.
-- **GitHub Pages:** in a repository, Settings › Pages › deploy from a branch.
-
-Visitors can then install WriteNow from their browser: Safari **File › Add to Dock** on macOS 14+, the install icon in the address bar in Edge and Chrome, or **Add to Home Screen** on a phone or tablet. The site keeps working offline after the first visit.
-
----
-
 ## First steps
 
+- Start WriteNow from the Start menu (Windows), the Applications folder (macOS) or your app menu (Linux).
 - Click **Start writing** on the welcome box and type. The sample text explains the ruler and menus.
 - **File › New** starts an empty document, **File › Save** keeps it, **File › Open…** brings it back.
 - **File › Import File…** opens a text, HTML or PDF file as a new document. You can also drag a file onto the page.
 - **View › Platinum** switches to the grey Mac OS 8 look; **View › Show Ruler** and **Show Invisibles** toggle the ruler and ¶ marks.
 
-Your documents are stored on your own computer, inside WriteNow (or the browser, for the single-file version). They are not shared between computers or browsers.
+Your documents are stored on your own computer, inside WriteNow. They are not uploaded or shared between computers.
 
 ## Keyboard shortcuts
 
@@ -133,7 +111,7 @@ On Windows and Linux use **Ctrl**, on macOS use **⌘**. The menus show the righ
 | F / G | Find / Find again | ] / [ | Bigger / smaller text |
 | B / I / U | Bold / Italic / Underline | Shift P | Plain text |
 
-Some shortcuts belong to the browser (for example Ctrl N or Ctrl W) and cannot be used by WriteNow; the menus always work.
+A few shortcuts, such as Ctrl N and Ctrl W on Windows and Linux, are reserved by the system window; the menus always work.
 
 ## Updating
 
@@ -147,9 +125,10 @@ Download the newest zip and run the installer again (Windows, Linux) or `make-ap
 | Windows: the shortcut still shows an old icon | Restart Windows; the icon cache refreshes. |
 | macOS: `make-app.command` prints an error | [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and paste the full Terminal output. |
 | macOS: *"command not found: swiftc"* | Run `xcode-select --install`, then try again. |
-| Linux: *"No Chromium-based browser found"* | Install Chromium (see above), or use the [no-install version](#any-browser-no-install). |
+| Linux: *"No Chromium-based browser found"* | Install Chromium (see [Linux](#linux)) and run `bash install.sh` again. |
+| *"WriteNow is a desktop program"* appears | You opened `index.html` directly. Install WriteNow with the installer and start it from the menu instead. |
 | A PDF does not open | Check the internet connection (the PDF reader loads on first use). Scanned PDFs contain no text and cannot be imported. |
-| *"Browser storage is full"* | Delete old documents with **File › Open… › Delete**. |
+| *"Storage is full"* | Delete old documents with **File › Open… › Delete**. |
 | Courier, Helvetica or Times look different | Without internet, similar fonts from your system are used. The pixel fonts are always built in. |
 
-Still stuck? [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and say which system and browser you use.
+Still stuck? [Open an issue](https://github.com/jeltevanschelven8-afk/writenow/issues) and say which system you use.
