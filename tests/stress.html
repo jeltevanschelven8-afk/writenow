@@ -14,7 +14,7 @@ pre{margin:2px 0 8px 18px;white-space:pre-wrap}
 /* Runs against the shipped page (windows/index.html), in a same-origin iframe.
    Serve the project folder (python -m http.server) and open tests/stress.html.
    window.__results is filled for automation. */
-const TARGET = new URLSearchParams(location.search).get('target') || '../windows/index.html';
+const TARGET = new URLSearchParams(location.search).get('target') || '../windows/index.html?app=1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const results = window.__results = [];
 let cur = null;
@@ -28,7 +28,7 @@ async function boot(opts = {}) {
   let html = null;
   if (opts.patch) {
     html = await (await fetch(TARGET)).text();
-    html = '<script>' + opts.patch + '<\/script>' + html;
+    html = '<script>Object.defineProperty(window,"WN_REQUIRE_APP",{value:false,writable:false});' + opts.patch + '<\/script>' + html;
     f.srcdoc = html;
   } else f.src = TARGET;
   document.body.appendChild(f);
