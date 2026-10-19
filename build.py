@@ -48,7 +48,7 @@ def zip_folder(folder, out, executable=()):
             data = open(path, 'rb').read()
             if f.endswith(('.command', '.swift', '.txt', '.sh', '.ps1')):
                 data = data.replace(b'\r\n', b'\n')
-            zi = zipfile.ZipInfo(folder + '/' + f)
+            zi = zipfile.ZipInfo(os.path.basename(out)[:-4] + '/' + f)
             zi.compress_type = zipfile.ZIP_DEFLATED
             zi.external_attr = (0o100755 if f in executable or f.endswith(('.command', '.sh')) else 0o100644) << 16
             z.writestr(zi, data)

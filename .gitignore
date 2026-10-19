@@ -1,4 +1,2 @@
-dist/
-*.zip
 __pycache__/
 .claude/
